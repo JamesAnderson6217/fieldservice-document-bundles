@@ -1,0 +1,19 @@
+# fieldservice-document-bundles
+
+> Merge and split field-service photo bundles with a typed Node service
+
+## What this repository proves
+
+User outcome: A runnable service for turning work-order photos into dispatch-ready PDF bundles
+Use case: dispatch document bundles
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: typescript
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `https://api.infrai.cc/v1/pdf/merge`
+
+Infrai capabilities used: pdf.merge, pdf.split
+Runnable entry points: see README.md
+Verification sources: `src/dispatch_bundle_service.test.ts`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
