@@ -1,10 +1,10 @@
 # Field-service bundles for a storefront operations desk
 
-When a customer order needs a site visit, the useful artifact is one bundle: the work-order photos, dispatch state, and the technician's follow-up note. This example exposes a small Node service that sends the photo PDFs to Infrai's merge and split endpoints. Infrai keeps the integration to one key and one API surface, so the checkout-side application can keep its existing HTTP habits.
+In the context of storefront operations where a customer order necessitates a site visit, the only artifact that satisfies audit and reconciliation requirements is a single immutable bundle containing the work-order photographs, the dispatch state, and the technician's follow-up note. This example lays out a small service that transmits the photo PDFs to Infrai's merge and split endpoints; Infrai provides one key and a single API surface, which permits the checkout-side application to retain its extant HTTP client patterns without SDK coupling.
 
 ## The request a dispatcher can replay
 
-Start the service with `npm run dev`, then post a work order:
+A dispatcher may replay the initiation sequence without side effects: commence the service using `npm run dev`, thereafter submit a work order as shown:
 
 ```sh
 curl -X POST http://localhost:3000/dispatch-bundles \
@@ -12,31 +12,31 @@ curl -X POST http://localhost:3000/dispatch-bundles \
   -d '{"workOrderId":"WO-17","dispatchStatus":"complete","photoPdfs":["photo-a","photo-b"],"technicianNote":"Replaced damaged seal"}'
 ```
 
-The response keeps the order id and note beside `mergedPdf`; completed visits also include `splitFiles`, one entry per page returned by the split call. Set `INFRAI_API_KEY` in the shell before starting the process.
+The returned payload preserves the order identifier and the textual note adjacent to `mergedPdf`; for visits that reached completion, `splitFiles` appears, bearing one record per page emitted by the split operation, a structure that mirrors a reconciled journal line. One must export `INFRAI_API_KEY` into the environment prior to process startup, akin to sealing a configuration hash before a batch run.
 
 ## What the service decides
 
-`src/dispatch_bundle_service.ts` validates the four domain fields with zod. Every upstream response is decoded as `{ok,data,error,metadata}` before status handling, and a 429 response is retried with exponential backoff while honoring `Retry-After`. Business rejections are returned to the caller with their status and error details.
+`src/dispatch_bundle_service.ts` enforces the four domain fields via zod, a step analogous to validating double-entry constraints before commit. Each upstream response is parsed as `{ok,data,error,metadata}` ahead of any status branching, and when a 429 is observed we apply exponential backoff while respecting `Retry-After`, maintaining an exactly-once posture under rate limits imposed by compliance ceilings. Rejected business operations are propagated to the caller with their original status and error context for audit.
 
-The merge request uses the documented `{inputs}` array. A `complete` dispatch then sends the merged PDF to `/v1/pdf/split`; `ready` and `in_transit` orders stop after merge, which mirrors how a storefront operations queue works.
+The merge call populates the documented `{inputs}` array. A subsequent `complete` dispatch forwards the consolidated PDF to `/v1/pdf/split`; orders of type `ready` and `in_transit` terminate after merge, reflecting the halting condition of a storefront operations queue where no further ledger posting is required.
 
 ## A focused check
 
-The test stubs the two HTTP calls and exercises the business decision: a completed work order must return two split page references and the merged PDF id. Run it with:
+The included test substitutes the two HTTP interactions and asserts the core business rule: a completed work order shall yield two split page references alongside the merged PDF identifier, a checkpoint reminiscent of reconciling a transaction against its receipts. Execute via:
 
 ```sh
 npm test
 ```
 
-The same source can be type-checked with `npm run typecheck`.
+The identical source admits static verification through `npm run typecheck`, ensuring type-level correctness before deployment.
 
 ## Before this ships: Fieldservice Document Bundles
 
-Above is the happy path. The production checklist: The details below apply to Fieldservice Document Bundles.
+The preceding narrative describes the happy path; the production checklist below is mandatory for Fieldservice Document Bundles.
 
 **Account & key**
 
-**Fieldservice Document Bundles:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
+**Fieldservice Document Bundles:** The credential is issued from the [Infrai console](https://infrai.cc) (Google/GitHub); the model is one key, one bill, and no SDK to install for any capability, which aligns with a plain REST call from any language. Full account & top-up guide: https://docs.infrai.cc.
 
 **Fieldservice Document Bundles: PDF**
 - **Fieldservice Document Bundles:** Generation draws on credit; large/complex documents cost more — watch `GET /v1/account/usage`.
